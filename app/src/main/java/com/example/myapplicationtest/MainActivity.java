@@ -1,16 +1,15 @@
 package com.example.myapplicationtest;
 
-import androidx.appcompat.app.AppCompatActivity;
-
 import android.app.ProgressDialog;
 import android.content.Intent;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ProgressBar;
 import android.widget.Toast;
+
+import androidx.appcompat.app.AppCompatActivity;
 
 import com.android.volley.AuthFailureError;
 import com.android.volley.Request;
@@ -49,7 +48,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         buttonRegister.setOnClickListener(this);
         buttonLogin.setOnClickListener(this);
+
     }
+
+
 
     public void logIn() {
         final String email = editEmail.getText().toString().trim();
@@ -58,21 +60,24 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         StringRequest stringRequest = new StringRequest(Request.Method.POST, Backend.login_url, new Response.Listener<String>() {
             @Override
             public void onResponse(String response) {
+
                 try {
                     JSONObject jsonObject = new JSONObject(response);
-                    if (!jsonObject.getBoolean("error")) { //If json "error" is false
-                        SharePrefManager.getInstance(MainActivity.this).userLogin(jsonObject.getInt("id"),
-                                jsonObject.getString("username"), jsonObject.getString("email"));
-                        Toast.makeText(MainActivity.this, "Welcome back " + jsonObject.getString("username"), Toast.LENGTH_SHORT).show();
+                    if (!jsonObject.getBoolean("error")) {
 
+                        Toast.makeText(MainActivity.this, "Welcome back " +jsonObject.getString("username") , Toast.LENGTH_SHORT).show();
                         String id = jsonObject.getString("id");
-                        Log.d("getid", "" + jsonObject.getString("id"));
-                        Intent intent = new Intent(MainActivity.this, MapsActivity.class);
+
+                        Intent intent = new Intent(MainActivity.this, MenuActivity.class);
                         intent.putExtra("ID", id);
                         startActivity(intent);
-                    } else { // else print json "message"
+
+                        finish();
+                    }
+                    else {
                         Toast.makeText(MainActivity.this, jsonObject.getString("message"), Toast.LENGTH_SHORT).show();
                     }
+
                 } catch (JSONException e) {
                     e.printStackTrace();
                 }
@@ -85,15 +90,14 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }) {
             @Override
             protected Map<String, String> getParams() throws AuthFailureError {
-                Map<String, String> param = new HashMap<>();
-                param.put("email", email);
+                HashMap <String, String> param = new HashMap<>();
                 param.put("password", password);
+                param.put("email", email);
                 return param;
             }
         };
 
         RequestHandler.getInstance(this).addToRequestQueue(stringRequest);
-
     }
 
     @Override
@@ -101,8 +105,16 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         if (view == buttonRegister) {
             Intent intent = new Intent(this, RegisterActivity.class);
             startActivity(intent);
+
         } else if (view == buttonLogin) {
             logIn();
+
         }
+    }
+
+    @Override
+    public void onBackPressed() {
+        super.onBackPressed();
+        finish();
     }
 }
