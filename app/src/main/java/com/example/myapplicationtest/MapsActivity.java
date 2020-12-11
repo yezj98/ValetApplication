@@ -3,7 +3,9 @@ package com.example.myapplicationtest;
 import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.location.Criteria;
 import android.location.Location;
+import android.location.LocationManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
@@ -31,7 +33,9 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.android.libraries.places.api.Places;
@@ -64,6 +68,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     PlacesClient placesClient;
     Boolean backButtonTwice = false;
     Button confirm, confirm1;
+    LocationManager locationManager;
+    String bestProvider;
+    Criteria criteria;
+    LatLng destination, depart;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -79,13 +87,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         mapFragment.getMapAsync(this);
 
 
-
         getLocation();
 
-        googlePlace();
 
         dropList();
-        
+
         new Timer().scheduleAtFixedRate(new TimerTask() {
             @Override
             public void run() {
@@ -115,19 +121,18 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                         String latitude = String.valueOf(getCurrentLatitude1);
                         String longitude = String.valueOf(getCurrentLongitude1);
 
-                        LatLng latLng = new LatLng(getCurrentLatitude1, getCurrentLongitude1);
-
                         Intent intent = getIntent();
                         String userID = intent.getStringExtra("ID");
 
-                        overWriteLocation(userID, latitude, longitude);
-                        
+                        Log.d("userID", "" + userID);
 
+                        overWriteLocation(userID, latitude, longitude);
 
                     }
                 });
             }
         }, 0, 10000);
+
     }
 
     /**
@@ -142,11 +147,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
+//        destination = new LatLng(37.4219983, -122.084);
 
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             // TODO: Consider calling
             //    ActivityCompat#requestPermissions
-            // here to request the missing permissions, and then overriding
+            // here to request the missing permissions, and then overriUIDding
             //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
             //                                          int[] grantResults)
             // to handle the case where the user grants the permission. See the documentation
@@ -154,11 +160,22 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             return;
         }
         mMap.setMyLocationEnabled(true);
+
+        googlePlace(googleMap);
+
     }
 
     public void getLocation() {
+//        criteria = new Criteria();
+
+//        locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
+//
+//        bestProvider = String.valueOf(locationManager.getBestProvider(criteria, true)).toString();
+
 
         mfusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this);
+
+
         if (locationGranted) {
 
             if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
@@ -172,11 +189,34 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 return;
             }
 
-            final Task location = mfusedLocationProviderClient.getLastLocation();
+//            Location location = locationManager.getLastKnownLocation(bestProvider);
+//
+//            if (location == null) {
+//                locationManager.requestLocationUpdates(bestProvider,1000,0, (LocationListener) MapsActivity.this);
+//            } else {
+//                    currentLongitude = location.getLongitude();
+//                    currentLatitude = location.getLatitude();
+//                    final String latitude = String.valueOf(currentLatitude);
+//                    final String longitude = String.valueOf(currentLongitude);
+//
+//                    Intent intent = getIntent();
+//                    userID = intent.getStringExtra("ID");
+//
+//                    storeLocation(userID, longitude, latitude);
+//
+//                    LatLng latLng = new LatLng(currentLatitude, currentLongitude);
+//
+//                    mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, 18), 1, null);
+//
+//                }
+
+            final Task<Location> location = mfusedLocationProviderClient.getLastLocation();
             location.addOnCompleteListener(new OnCompleteListener() {
                 @Override
                 public void onComplete(@NonNull Task task) {
+
                     Location currentLocation = (Location) task.getResult();
+                    Log.d("location1", "" + currentLocation);
 
                     currentLatitude = currentLocation.getLatitude();
                     currentLongitude = currentLocation.getLongitude();
@@ -190,15 +230,13 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     storeLocation(userID, longitude, latitude);
 
                     LatLng latLng = new LatLng(currentLatitude, currentLongitude);
-                    mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, 18), 1, null);
 
+                    mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, 18), 1, null);
                 }
             });
-
         } else {
-            Toast.makeText(this, "Unable to allocate location", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Location denied", Toast.LENGTH_SHORT).show();
         }
-
     }
 
     public void storeLocation(final String id, final String longitude, final String latitude) {
@@ -212,7 +250,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 } catch (JSONException e) {
                     e.printStackTrace();
                 }
-
             }
         }, new Response.ErrorListener() {
             @Override
@@ -239,7 +276,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         new Timer().scheduleAtFixedRate(new TimerTask() {
             @Override
             public void run() {
-
 
             }
         }, 0, 10000);
@@ -294,21 +330,52 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     autocompleteSupportFragment.getView().setVisibility(View.INVISIBLE);
                     AutocompleteSupportFragment autocompleteSupportFragment1 = (AutocompleteSupportFragment) getSupportFragmentManager().findFragmentById(R.id.googlefragment);
                     autocompleteSupportFragment1.setHint("To where");
+                    autocompleteSupportFragment1.setText("");
 
                     confirm1.setVisibility(View.INVISIBLE);
                     confirm.setVisibility(View.VISIBLE);
 
-                }
-                else if (spinner.getSelectedItemPosition() == 1) {
+                    if (ActivityCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                        // TODO: Consider calling
+                        //    ActivityCompat#requestPermissions
+                        // here to request the missing permissions, and then overriding
+                        //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+                        //                                          int[] grantResults)
+                        // to handle the case where the user grants the permission. See the documentation
+                        // for ActivityCompat#requestPermissions for more details.
+                        return;
+                    }
+                    mMap.setMyLocationEnabled(true);
+                    mMap.clear();
+
+                } else if (spinner.getSelectedItemPosition() == 1) {
+
                     AutocompleteSupportFragment autocompleteSupportFragment = (AutocompleteSupportFragment) getSupportFragmentManager().findFragmentById(R.id.googlefragment1);
                     autocompleteSupportFragment.getView().setVisibility(View.VISIBLE);
                     autocompleteSupportFragment.setHint("To where");
+                    autocompleteSupportFragment.setText("");
 
                     AutocompleteSupportFragment autocompleteSupportFragment1 = (AutocompleteSupportFragment) getSupportFragmentManager().findFragmentById(R.id.googlefragment);
                     autocompleteSupportFragment1.setHint("From where");
+                    autocompleteSupportFragment1.setText("");
+
 
                     confirm1.setVisibility(View.VISIBLE);
                     confirm.setVisibility(View.INVISIBLE);
+
+                    if (ActivityCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                        // TODO: Consider calling
+                        //    ActivityCompat#requestPermissions
+                        // here to request the missing permissions, and then overriding
+                        //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+                        //                                          int[] grantResults)
+                        // to handle the case where the user grants the permission. See the documentation
+                        // for ActivityCompat#requestPermissions for more details.
+                        return;
+                    }
+                    mMap.setMyLocationEnabled(false);
+                    mMap.clear();
+
                 }
 
             }
@@ -318,10 +385,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
             }
         });
-
     }
 
-    private void googlePlace () {
+    private void googlePlace (final GoogleMap googleMap) {
         String api = "AIzaSyAOe6TknXHJNTITfnH-NMMKuTr5kzgyjwk";
         final AutocompleteSupportFragment autocompleteSupportFragment =
                 (AutocompleteSupportFragment) getSupportFragmentManager().findFragmentById(R.id.googlefragment);
@@ -336,7 +402,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         autocompleteSupportFragment.setOnPlaceSelectedListener(new PlaceSelectionListener() {
             @Override
             public void onPlaceSelected(@NonNull Place place) {
-                Log.v("Tag", "Place" + place.getName() + "," + place.getId());
+                destination = place.getLatLng();
+                setDestination(destination, googleMap);
             }
 
             @Override
@@ -347,11 +414,13 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             }
         });
 
-        autocompleteSupportFragment1.setPlaceFields(Arrays.asList(Place.Field.ID, Place.Field.NAME, Place.Field.ADDRESS));
+        autocompleteSupportFragment1.setPlaceFields(Arrays.asList(Place.Field.ID, Place.Field.NAME, Place.Field.ADDRESS, Place.Field
+        .LAT_LNG));
         autocompleteSupportFragment1.setOnPlaceSelectedListener(new PlaceSelectionListener() {
             @Override
             public void onPlaceSelected(@NonNull Place place) {
-
+                depart = place.getLatLng();
+                setDepart(depart, googleMap);
             }
 
             @Override
@@ -359,6 +428,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
             }
         });
+        Log.d ( "destination", "" + destination);
     }
 
     @Override
@@ -379,5 +449,13 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 }
             }, 2000);
         }
+    }
+
+    private void setDestination (LatLng latLng, GoogleMap googleMap) {
+        googleMap.addMarker(new MarkerOptions().position(latLng).title("Your destination"));
+    }
+
+    private void setDepart (LatLng latLng, GoogleMap googleMap) {
+        googleMap.addMarker(new MarkerOptions().position(latLng).title("Your starting point")).setIcon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ORANGE));
     }
 }

@@ -7,11 +7,10 @@ import android.widget.ImageButton;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-import dagger.internal.MapBuilder;
-
 public class MenuActivity extends AppCompatActivity {
 
     ImageButton carButton, driverButton, moreButton;
+    String userId;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -22,12 +21,18 @@ public class MenuActivity extends AppCompatActivity {
         driverButton = findViewById(R.id.driver);
         moreButton = findViewById(R.id.more);
 
+        Intent intent = getIntent();
+        userId = intent.getStringExtra("ID");
+
+
         carButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 Intent intent = new Intent(MenuActivity.this, MapsActivity.class);
+                intent.putExtra("ID", userId);
                 startActivity(intent);
             }
         });
+
     }
 }
