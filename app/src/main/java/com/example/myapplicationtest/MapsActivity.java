@@ -3,9 +3,7 @@ package com.example.myapplicationtest;
 import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.location.Criteria;
 import android.location.Location;
-import android.location.LocationManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
@@ -20,12 +18,7 @@ import androidx.annotation.NonNull;
 import androidx.core.app.ActivityCompat;
 import androidx.fragment.app.FragmentActivity;
 
-import com.android.volley.AuthFailureError;
-import com.android.volley.Request;
-import com.android.volley.Response;
-import com.android.volley.VolleyError;
-import com.android.volley.toolbox.StringRequest;
-import com.example.myapplicationtest.module.Backend;
+import com.example.myapplicationtest.service.storeLocation;
 import com.google.android.gms.common.api.Status;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
@@ -43,14 +36,10 @@ import com.google.android.libraries.places.api.model.Place;
 import com.google.android.libraries.places.api.net.PlacesClient;
 import com.google.android.libraries.places.widget.AutocompleteSupportFragment;
 import com.google.android.libraries.places.widget.listener.PlaceSelectionListener;
-
-import org.json.JSONException;
-import org.json.JSONObject;
+import com.google.maps.GeoApiContext;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -68,10 +57,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     PlacesClient placesClient;
     Boolean backButtonTwice = false;
     Button confirm, confirm1;
-    LocationManager locationManager;
-    String bestProvider;
-    Criteria criteria;
     LatLng destination, depart;
+    private GeoApiContext geoApiContext;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -85,6 +72,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         confirm = findViewById(R.id.confirm_button);
         confirm1 = findViewById(R.id.confirm_button1);
         mapFragment.getMapAsync(this);
+
+        storeLocation storeLocation = new storeLocation();
+
 
 
         getLocation();
@@ -126,8 +116,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
                         Log.d("userID", "" + userID);
 
-                        overWriteLocation(userID, latitude, longitude);
-
+                        storeLocation.overWriteLocation(userID,latitude,longitude,MapsActivity.this);
                     }
                 });
             }
@@ -152,7 +141,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             // TODO: Consider calling
             //    ActivityCompat#requestPermissions
-            // here to request the missing permissions, and then overriUIDding
+            // here to request the missing permissions, and then overriding
             //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
             //                                          int[] grantResults)
             // to handle the case where the user grants the permission. See the documentation
@@ -227,7 +216,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     Intent intent = getIntent();
                     userID = intent.getStringExtra("ID");
 
-                    storeLocation(userID, longitude, latitude);
+                    storeLocation storeLocation = new storeLocation();
+
+                    storeLocation.storeLocation(userID, longitude, latitude, MapsActivity.this);
 
                     LatLng latLng = new LatLng(currentLatitude, currentLongitude);
 
@@ -239,38 +230,38 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
     }
 
-    public void storeLocation(final String id, final String longitude, final String latitude) {
-
-        StringRequest stringRequest = new StringRequest(Request.Method.POST, Backend.location_url, new Response.Listener<String>() {
-            @Override
-            public void onResponse(String response) {
-                try {
-                    JSONObject jsonObject = new JSONObject(response);
-                    Toast.makeText(MapsActivity.this, jsonObject.getString("message"), Toast.LENGTH_SHORT).show();
-                } catch (JSONException e) {
-                    e.printStackTrace();
-                }
-            }
-        }, new Response.ErrorListener() {
-            @Override
-            public void onErrorResponse(VolleyError error) {
-                Toast.makeText(MapsActivity.this, error.getMessage(), Toast.LENGTH_SHORT).show();
-                Log.d("hhh", " " + error.getMessage());
-            }
-        }) {
-            @Override
-            protected Map<String, String> getParams() throws AuthFailureError {
-                Map<String, String> param = new HashMap<>();
-                param.put("id", id);
-                param.put("longitude", longitude);
-                param.put("latitude", latitude);
-
-                Log.d("php", "" + param);
-                return param;
-            }
-        };
-        RequestHandler.getInstance(this).addToRequestQueue(stringRequest);
-    }
+//    public void storeLocation(final String id, final String longitude, final String latitude) {
+//
+//        StringRequest stringRequest = new StringRequest(Request.Method.POST, Backend.location_url, new Response.Listener<String>() {
+//            @Override
+//            public void onResponse(String response) {
+//                try {
+//                    JSONObject jsonObject = new JSONObject(response);
+//                    Toast.makeText(MapsActivity.this, jsonObject.getString("message"), Toast.LENGTH_SHORT).show();
+//                } catch (JSONException e) {
+//                    e.printStackTrace();
+//                }
+//            }
+//        }, new Response.ErrorListener() {
+//            @Override
+//            public void onErrorResponse(VolleyError error) {
+//                Toast.makeText(MapsActivity.this, error.getMessage(), Toast.LENGTH_SHORT).show();
+//                Log.d("hhh", " " + error.getMessage());
+//            }
+//        }) {
+//            @Override
+//            protected Map<String, String> getParams() throws AuthFailureError {
+//                Map<String, String> param = new HashMap<>();
+//                param.put("id", id);
+//                param.put("longitude", longitude);
+//                param.put("latitude", latitude);
+//
+//                Log.d("php", "" + param);
+//                return param;
+//            }
+//        };
+//        RequestHandler.getInstance(this).addToRequestQueue(stringRequest);
+//    }
 
     public void timer(int sec) {
         new Timer().scheduleAtFixedRate(new TimerTask() {
@@ -281,37 +272,37 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }, 0, 10000);
     }
 
-    private void overWriteLocation(final String id, final String latitude, final String longitude) {
-        StringRequest stringRequest = new StringRequest(Request.Method.POST, Backend.overwrite_url, new Response.Listener<String>() {
-            @Override
-            public void onResponse(String response) {
-                try {
-                    JSONObject jsonObject = new JSONObject(response);
-//                   Toast.makeText(MapsActivity.this, jsonObject.getString("message"), Toast.LENGTH_SHORT).show();
-                } catch (JSONException e) {
-                    e.printStackTrace();
-                }
-
-            }
-        }, new Response.ErrorListener() {
-            @Override
-            public void onErrorResponse(VolleyError error) {
-                Toast.makeText(MapsActivity.this, error.getMessage(), Toast.LENGTH_SHORT).show();
-
-            }
-        }) {
-            @Override
-            protected Map<String, String> getParams() throws AuthFailureError {
-                Map<String, String> param = new HashMap<>();
-                param.put("id", id);
-                param.put("latitude", latitude);
-                param.put("longitude", longitude);
-
-                return param;
-            }
-        };
-        RequestHandler.getInstance(this).addToRequestQueue(stringRequest);
-    }
+//    private void overWriteLocation(final String id, final String latitude, final String longitude) {
+//        StringRequest stringRequest = new StringRequest(Request.Method.POST, Backend.overwrite_url, new Response.Listener<String>() {
+//            @Override
+//            public void onResponse(String response) {
+//                try {
+//                    JSONObject jsonObject = new JSONObject(response);
+////                   Toast.makeText(MapsActivity.this, jsonObject.getString("message"), Toast.LENGTH_SHORT).show();
+//                } catch (JSONException e) {
+//                    e.printStackTrace();
+//                }
+//
+//            }
+//        }, new Response.ErrorListener() {
+//            @Override
+//            public void onErrorResponse(VolleyError error) {
+//                Toast.makeText(MapsActivity.this, error.getMessage(), Toast.LENGTH_SHORT).show();
+//
+//            }
+//        }) {
+//            @Override
+//            protected Map<String, String> getParams() throws AuthFailureError {
+//                Map<String, String> param = new HashMap<>();
+//                param.put("id", id);
+//                param.put("latitude", latitude);
+//                param.put("longitude", longitude);
+//
+//                return param;
+//            }
+//        };
+//        RequestHandler.getInstance(this).addToRequestQueue(stringRequest);
+//    }
 
     private void dropList() {
         ArrayList<String> arrayList = new ArrayList<>();
@@ -387,7 +378,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         });
     }
 
-    private void googlePlace (final GoogleMap googleMap) {
+    private void googlePlace(final GoogleMap googleMap) {
         String api = "AIzaSyAOe6TknXHJNTITfnH-NMMKuTr5kzgyjwk";
         final AutocompleteSupportFragment autocompleteSupportFragment =
                 (AutocompleteSupportFragment) getSupportFragmentManager().findFragmentById(R.id.googlefragment);
@@ -395,7 +386,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         AutocompleteSupportFragment autocompleteSupportFragment1 = (AutocompleteSupportFragment) getSupportFragmentManager().findFragmentById(R.id.googlefragment1);
 
         if (!Places.isInitialized()) {
-            Places.initialize(getApplicationContext(),api);
+            Places.initialize(getApplicationContext(), api);
         }
         placesClient = Places.createClient(this);
         autocompleteSupportFragment.setPlaceFields(Arrays.asList(Place.Field.ID, Place.Field.LAT_LNG, Place.Field.NAME, Place.Field.ADDRESS));
@@ -409,13 +400,13 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             @Override
             public void onError(@NonNull Status status) {
                 Log.d("Tag", "Error");
-                Toast.makeText(MapsActivity.this,""+ status, Toast.LENGTH_SHORT).show();
+                Toast.makeText(MapsActivity.this, "" + status, Toast.LENGTH_SHORT).show();
                 Log.d("tafff", "" + status);
             }
         });
 
         autocompleteSupportFragment1.setPlaceFields(Arrays.asList(Place.Field.ID, Place.Field.NAME, Place.Field.ADDRESS, Place.Field
-        .LAT_LNG));
+                .LAT_LNG));
         autocompleteSupportFragment1.setOnPlaceSelectedListener(new PlaceSelectionListener() {
             @Override
             public void onPlaceSelected(@NonNull Place place) {
@@ -428,7 +419,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
             }
         });
-        Log.d ( "destination", "" + destination);
+        Log.d("destination", "" + destination);
     }
 
     @Override
@@ -437,9 +428,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         if (backButtonTwice) {
             super.onBackPressed();
             return;
-     
-        }
-        else {
+
+        } else {
             backButtonTwice = true;
             Toast.makeText(this, "Click again to exit", Toast.LENGTH_SHORT).show();
             new Handler().postDelayed(new Runnable() {
@@ -451,11 +441,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
     }
 
-    private void setDestination (LatLng latLng, GoogleMap googleMap) {
+    private void setDestination(LatLng latLng, GoogleMap googleMap) {
         googleMap.addMarker(new MarkerOptions().position(latLng).title("Your destination"));
     }
 
-    private void setDepart (LatLng latLng, GoogleMap googleMap) {
+    private void setDepart(LatLng latLng, GoogleMap googleMap) {
         googleMap.addMarker(new MarkerOptions().position(latLng).title("Your starting point")).setIcon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ORANGE));
     }
 }
