@@ -32,12 +32,9 @@ public class storeLocation {
                     e.printStackTrace();
                 }
             }
-        }, new Response.ErrorListener() {
-            @Override
-            public void onErrorResponse(VolleyError error) {
-                Toast.makeText((Context) object, error.getMessage(), Toast.LENGTH_SHORT).show();
-                Log.d("hhh", " " + error.getMessage());
-            }
+        }, error -> {
+            Toast.makeText((Context) object, error.getMessage(), Toast.LENGTH_SHORT).show();
+            Log.d("hhh", " " + error.getMessage());
         }) {
             @Override
             protected Map<String, String> getParams() throws AuthFailureError {

@@ -23,6 +23,15 @@
         android:layout_below="@+id/snipper"
         android:layout_marginTop="55dp" />
 
+<!--    <fragment-->
+<!--        android:id="@+id/googledestination"-->
+<!--        android:name="com.google.android.libraries.places.widget.AutocompleteSupportFragment"-->
+<!--        android:layout_width="match_parent"-->
+<!--        android:layout_height="60dp"-->
+<!--        android:layout_below="@+id/snipper"-->
+<!--        android:layout_marginTop="55dp" />-->
+
+
     <Spinner
         android:id="@+id/snipper"
         android:layout_width="match_parent"
@@ -33,6 +42,14 @@
 
     <fragment
         android:id="@+id/googlefragment"
+        android:name="com.google.android.libraries.places.widget.AutocompleteSupportFragment"
+        android:layout_width="match_parent"
+        android:layout_height="51dp"
+        android:layout_alignParentBottom="true"
+        android:layout_marginBottom="131dp" />
+
+    <fragment
+        android:id="@+id/googledepart"
         android:name="com.google.android.libraries.places.widget.AutocompleteSupportFragment"
         android:layout_width="match_parent"
         android:layout_height="51dp"
